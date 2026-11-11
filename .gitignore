@@ -1,0 +1,32 @@
+# 构建产物
+/target/
+/desktop/src-tauri/target/
+
+# 第三方仓库副本（含自身 target，约 1.2G，纯历史冗余）
+/cankao/
+
+# 临时工作目录：含真实凭据备份、注册表导出、个人脚本
+/_work/
+
+# 运行日志（含内网 IP）
+*.log
+
+# 安装包与二进制依赖
+*.msi
+*.idsig
+
+# 根目录界面截图（非源码）
+/cap_main.png
+/cap_wv.png
+/shot_after.png
+/shot_before.png
+/shot_top.png
+/ui_shot.png
+
+# 个人真实连接配置（含明文密码），脱敏模板见 myftp.example.toml
+/myftp.toml
+/myftp_iso.toml
+/test.toml
+
+# 内部排错记录（含内网 IP / 个人路径），不对外
+/测试问题记录.md

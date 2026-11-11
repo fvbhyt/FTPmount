@@ -1,0 +1,17 @@
+[package]
+name = "ftpmount-rs"
+version = "0.1.12"
+edition = "2021"
+
+[dependencies]
+winfsp = { version = "0.13", features = ["delayload"] }
+winfsp-sys = "0.12"
+suppaftp = { version = "12", default-features = false, features = ["rustls-ring"] }
+anyhow = "1"
+toml = "0.8"
+serde = { version = "1", features = ["derive"] }
+widestring = "1"
+chrono = "0.4"
+
+[build-dependencies]
+winfsp = { version = "0.13", features = ["delayload"] }

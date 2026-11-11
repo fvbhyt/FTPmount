@@ -1,0 +1,473 @@
+/* FtpMount — 深色优先的紧凑界面 */
+
+:root {
+  --bg: #0d1017;
+  --bg-soft: #11151e;
+  --card: #161c27;
+  --card-2: #1b2230;
+  --line: #232b3a;
+  --line-2: #2c3546;
+  --text: #e7ecf6;
+  --dim: #8b97ae;
+  --dim-2: #64708a;
+  --accent: #3b82f6;
+  --accent-2: #8b5cf6;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --err: #ef4444;
+  --radius: 12px;
+  --shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+
+:root[data-theme="light"] {
+  --bg: #f4f6fb;
+  --bg-soft: #eef1f7;
+  --card: #ffffff;
+  --card-2: #f7f9fd;
+  --line: #e2e7f0;
+  --line-2: #d3dae7;
+  --text: #1a2231;
+  --dim: #5f6b80;
+  --dim-2: #8a95a8;
+  --shadow: 0 6px 20px rgba(20, 30, 60, .10);
+}
+
+* { box-sizing: border-box; }
+
+/* ---------- 整体缩放 ----------
+ * 内容不多，按 980×664 的原尺寸铺满窗口显得空、且占屏幕太大。
+ * 这里用 zoom 把整个界面缩到 80%（窗口尺寸同步改成 784×531），布局不用重排：
+ * zoom 容器里的百分比本身就按缩放后的尺寸计算，html 直接 100% 就能铺满，
+ * CSS 视口仍是 980×664，和设计稿一致。
+ *
+ * 为什么是 0.8 而不是 0.7：常见 125% 缩放的屏幕上，0.8 × 1.25 = 1.0，
+ * 一个 CSS 像素正好落在一个物理像素上，文字是像素级清晰的；
+ * 0.7 会得到 0.875，字会发虚。
+ */
+html {
+  --ui-zoom: 0.8;
+  zoom: var(--ui-zoom);
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.55 "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+  user-select: none;
+}
+
+/* 给深色底一点纵向层次，纯色大平面会显得脏 */
+body {
+  background:
+    radial-gradient(120% 70% at 50% -20%, rgba(59, 130, 246, .07), transparent 70%),
+    var(--bg);
+}
+
+button, input, select { font: inherit; color: inherit; }
+input, select { user-select: text; }
+
+/* ---------- 标题栏 ---------- */
+.app { display: flex; flex-direction: column; height: 100%; }
+
+.titlebar {
+  height: 44px;
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 14px;
+  background: linear-gradient(180deg, var(--bg-soft), var(--bg));
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand img { width: 20px; height: 20px; border-radius: 5px; }
+.brand .name { font-weight: 650; letter-spacing: .2px; transition: color .2s; }
+/* 防锁屏生效时品牌名变红（常亮状态一眼可见） */
+body.ka-on .brand .name { color: var(--err); }
+.brand .ver {
+  font-size: 11px;
+  color: var(--dim);
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  padding: 0 7px;
+  line-height: 16px;
+}
+
+.winctl { display: flex; height: 100%; }
+.winctl button {
+  width: 46px;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background .15s, color .15s;
+}
+.winctl button:hover { background: rgba(255, 255, 255, .07); color: var(--text); }
+.winctl button.close:hover { background: #e81123; color: #fff; }
+.winctl svg { width: 10px; height: 10px; }
+
+/* ---------- 布局 ---------- */
+.layout { flex: 1; display: flex; min-height: 0; }
+
+.side {
+  width: 208px;
+  flex: 0 0 208px;
+  border-right: 1px solid var(--line);
+  background: var(--bg-soft);
+  display: flex;
+  flex-direction: column;
+  padding: 14px 12px;
+  gap: 14px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 13px;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--card-2), var(--card));
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+  transition: border-color .2s, box-shadow .2s;
+}
+.status.on { border-color: rgba(34, 197, 94, .35); }
+.status.err { border-color: rgba(239, 68, 68, .35); }
+.status .dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--dim-2);
+  box-shadow: 0 0 0 4px rgba(120, 130, 150, .12);
+  flex: 0 0 auto;
+  transition: background .2s, box-shadow .2s;
+}
+.status.on .dot { background: var(--ok); box-shadow: 0 0 0 4px rgba(34, 197, 94, .16); }
+.status.err .dot { background: var(--err); box-shadow: 0 0 0 4px rgba(239, 68, 68, .16); }
+.status.busy .dot { background: var(--warn); box-shadow: 0 0 0 4px rgba(245, 158, 11, .16); animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+.status b { display: block; font-size: 13px; font-weight: 620; }
+.status small { display: block; color: var(--dim); font-size: 11px; }
+
+.nav { display: flex; flex-direction: column; gap: 3px; }
+.nav-item {
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--dim);
+  padding: 9px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  font-size: 13px;
+}
+.nav-item:hover { background: rgba(255, 255, 255, .05); color: var(--text); }
+.nav-item.active {
+  color: var(--text);
+  background: linear-gradient(90deg, rgba(59, 130, 246, .20), rgba(139, 92, 246, .13));
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 2px; }
+.switch-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 10px; border-radius: 8px; color: var(--dim); cursor: pointer;
+  font-size: 12px;
+}
+.switch-row:hover { background: rgba(255, 255, 255, .04); color: var(--text); }
+.switch-row input { display: none; }
+.switch-row .sw {
+  width: 30px; height: 17px; border-radius: 20px; background: var(--line-2);
+  position: relative; transition: background .18s;
+}
+.switch-row .sw::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 13px; height: 13px; border-radius: 50%; background: #fff;
+  transition: transform .18s;
+}
+.switch-row input:checked + .sw { background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.switch-row input:checked + .sw::after { transform: translateX(13px); }
+
+/* ---------- 主区 ---------- */
+.main { flex: 1; min-width: 0; padding: 14px 16px 16px; display: flex; }
+.tab { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 12px; }
+.tab.active { display: flex; }
+
+.card {
+  background: linear-gradient(180deg, var(--card-2), var(--card));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03), 0 8px 22px rgba(0, 0, 0, .16);
+}
+.card.grow { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* 表单卡片吃掉剩余高度，按钮条固定贴底，避免窗口底部出现一块空白 */
+.card.fill { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.card-head h2 {
+  margin: 0; font-size: 12px; font-weight: 650; color: var(--dim);
+  letter-spacing: 1.2px; text-transform: uppercase;
+}
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; }
+.card-head .row { flex: 1 1 auto; justify-content: flex-end; }
+.row select { width: auto; flex: 1 1 150px; min-width: 130px; }
+.card-head .row select { flex: 0 1 240px; min-width: 140px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+/* 只匹配网格的直接子 label，否则会把 .opt 这种嵌套 label 也按列排 */
+.grid > label, .field {
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 12px; color: var(--dim); min-width: 0;
+  letter-spacing: .2px;
+}
+.grid > label.wide { grid-column: 1 / -1; }
+
+/* 所有文本框统一深色底；不带 type 的 input 也算（否则会露出浏览器默认白底） */
+input:not([type=checkbox]):not([type=radio]), select {
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 9px;
+  border: 1px solid var(--line-2);
+  background: #0f141d;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+  min-width: 0;
+  width: 100%;
+}
+input:not([type=checkbox]):not([type=radio]):hover, select:hover { border-color: #3a455a; }
+input:focus, select:focus {
+  border-color: var(--accent);
+  background: #101722;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+}
+select { cursor: pointer; }
+input::placeholder { color: var(--dim-2); }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* 复选框做成和输入框同高的「选项块」，避免一颗小方块孤零零挂在网格里 */
+.opt {
+  display: flex; align-items: center; gap: 9px;
+  height: 34px; padding: 0 11px;
+  border: 1px solid var(--line-2); border-radius: 9px;
+  background: #0f141d; color: var(--dim);
+  cursor: pointer; font-size: 12px;
+  transition: border-color .15s, background .15s, color .15s;
+  user-select: none;
+}
+.opt:hover { border-color: #3a455a; color: var(--text); }
+.opt input { width: 13px; height: 13px; margin: 0; accent-color: var(--accent); }
+.opt:has(input:checked) {
+  border-color: rgba(59, 130, 246, .55);
+  background: rgba(59, 130, 246, .09);
+  color: var(--text);
+}
+/* 卡片底部的挂载地址预览：既填补空白，也让人一眼看清最终会连到哪 */
+.target {
+  margin-top: auto;
+  display: flex; align-items: center; gap: 8px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-2);
+  font-size: 12px; color: var(--dim-2);
+  min-width: 0;
+}
+.target .k { flex: 0 0 auto; letter-spacing: .2px; }
+.target code {
+  flex: 1 1 auto; min-width: 0;
+  color: var(--text); opacity: .82;
+  font: 11.5px/1.6 "Cascadia Mono", "Consolas", monospace;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.target code.dim { color: var(--dim-2); opacity: 1; }
+
+.check { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; color: var(--dim); font-size: 12px; cursor: pointer; }
+.check input { accent-color: var(--accent); }
+
+/* 按钮 */
+.btn {
+  height: 34px;
+  padding: 0 15px;
+  border-radius: 9px;
+  border: 1px solid var(--line-2);
+  background: var(--card-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform .08s, background .15s, border-color .15s, opacity .15s, box-shadow .15s;
+  white-space: nowrap;
+}
+.btn:hover { background: #232c3d; border-color: #37445c; }
+:root[data-theme="light"] .btn:hover { background: #eef2fa; border-color: #c6d0e2; }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .38; cursor: not-allowed; transform: none; }
+.btn.ghost { background: transparent; border-color: var(--line); color: var(--dim); }
+.btn.ghost:hover { color: var(--text); }
+.btn.danger:hover { color: #fff; background: #b91c1c; border-color: #b91c1c; }
+.btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border: 0;
+  color: #fff;
+  font-weight: 600;
+  padding: 0 20px;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, .30);
+}
+.btn.primary:hover { filter: brightness(1.08); box-shadow: 0 5px 18px rgba(59, 130, 246, .40); }
+.btn.primary:disabled { box-shadow: none; }
+
+.actions {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px; flex-wrap: wrap;
+  background: linear-gradient(180deg, var(--card-2), var(--card));
+}
+.spacer { flex: 1 1 auto; min-width: 0; }
+
+.hint { min-height: 18px; font-size: 12px; color: var(--dim); padding: 0 4px; }
+.hint.ok { color: var(--ok); }
+.hint.err { color: var(--err); }
+.hint.busy { color: var(--warn); }
+
+/* 日志 */
+.logs {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border-radius: 9px;
+  background: #0a0d13;
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  font: 12px/1.6 "Cascadia Mono", "Consolas", monospace;
+  user-select: text;
+}
+:root[data-theme="light"] .logs { background: #fbfcfe; }
+.log-line { display: flex; gap: 8px; white-space: pre-wrap; word-break: break-all; }
+.log-line .t { color: #55607a; flex: 0 0 auto; }
+.log-line .lv { flex: 0 0 42px; text-transform: uppercase; font-weight: 600; }
+.log-line.INFO .lv { color: #5ea0ff; }
+.log-line.DEBUG .lv { color: #6b7a94; }
+.log-line.WARN .lv { color: var(--warn); }
+.log-line.ERROR .lv { color: var(--err); }
+.log-line .m { color: #c9d3e4; }
+:root[data-theme="light"] .log-line .m { color: #26303f; }
+
+/* 关于 */
+.about { text-align: center; padding: 30px 40px; }
+.about-icon { width: 76px; height: 76px; border-radius: 18px; box-shadow: var(--shadow); }
+.about h1 { margin: 14px 0 2px; font-size: 22px; letter-spacing: .5px; }
+.ver-line { margin: 0 0 14px; color: var(--dim); font-size: 12px; }
+.desc { max-width: 460px; margin: 0 auto 16px; color: var(--dim); }
+.feat {
+  text-align: left; max-width: 430px; margin: 0 auto 18px;
+  padding-left: 18px; color: var(--dim); font-size: 12.5px; line-height: 1.9;
+}
+.meta {
+  max-width: 460px; margin: 0 auto; text-align: left;
+  border-top: 1px solid var(--line); padding-top: 12px;
+  font-size: 12px; color: var(--dim-2); line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.meta b { color: var(--dim); font-weight: 500; }
+
+/* ---------- 防锁屏 ---------- */
+.ka-row {
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .03);
+  color: var(--text);
+  font-size: 12.5px;
+}
+:root[data-theme="light"] .ka-row { background: rgba(20, 30, 60, .04); }
+.ka-tip { margin-top: 10px; font-size: 12px; color: var(--dim); line-height: 1.7; }
+
+.ka-badge {
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--line-2);
+  color: var(--dim);
+  white-space: nowrap;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ka-badge.on { color: var(--ok); border-color: rgba(34, 197, 94, .45); background: rgba(34, 197, 94, .10); }
+.ka-badge.force { color: var(--warn); border-color: rgba(245, 158, 11, .45); background: rgba(245, 158, 11, .10); }
+
+.ka-add { margin-bottom: 12px; }
+.ka-add input { flex: 1 1 auto; }
+
+.ka-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #0f141d;
+  padding: 6px;
+}
+:root[data-theme="light"] .ka-list { background: #fbfcfe; }
+
+.ka-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border-radius: 8px;
+}
+.ka-item:hover { background: rgba(255, 255, 255, .04); }
+:root[data-theme="light"] .ka-item:hover { background: rgba(20, 30, 60, .04); }
+.ka-item .nm {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: 12.5px/1.6 "Cascadia Mono", "Consolas", monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ka-item .st { flex: 0 0 auto; font-size: 11px; color: var(--dim-2); }
+.ka-item .st.run { color: var(--ok); }
+.ka-item input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--accent); flex: 0 0 auto; }
+.ka-item .btn { height: 26px; padding: 0 9px; font-size: 12px; }
+.ka-empty { padding: 20px 14px; text-align: center; color: var(--dim-2); font-size: 12px; line-height: 1.8; }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: #2b3444; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #3a465c; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- 窄窗口自适应 ----------
+ * 注意：媒体查询里的宽度是**窗口 CSS 像素**，不受 html 的 zoom 影响。
+ * 而界面是按 980×664 设计、再整体 zoom 到 80% 的，所以这里的断点要乘 0.8：
+ *   设计稿 860px  → 窗口 688px
+ *   设计稿 720px  → 窗口 576px
+ *   设计稿 600px  → 窗口 480px
+ * 改了 --ui-zoom 的话，这几个数要一起改。
+ */
+@media (max-width: 688px) {
+  .side { width: 184px; flex-basis: 184px; padding: 12px 10px; }
+  .main { padding: 12px; }
+  .card { padding: 14px; }
+}
+@media (max-width: 576px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .grid label.wide { grid-column: auto; }
+  .actions .spacer { display: none; }
+}
+@media (max-height: 480px) {
+  .side { gap: 10px; }
+  .status { padding: 9px 11px; }
+}

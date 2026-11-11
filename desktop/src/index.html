@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FtpMount</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="titlebar" data-tauri-drag-region>
+    <div class="brand" data-tauri-drag-region>
+      <img src="icon.png" alt="">
+      <span class="name">FtpMount</span>
+      <span class="ver" id="brand-ver">v0.1.0</span>
+    </div>
+    <div class="winctl">
+      <button id="w-min" title="最小化">
+        <svg viewBox="0 0 10 10"><path d="M1 5h8" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
+      <button id="w-max" title="最大化">
+        <svg viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
+      <button id="w-close" class="close" title="关闭到托盘">
+        <svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="side">
+      <div class="status" id="status-card">
+        <span class="dot"></span>
+        <div>
+          <b id="st-title">未挂载</b>
+          <small id="st-sub">选择站点后挂载</small>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-tab="conn">连接</button>
+        <button class="nav-item" data-tab="awake">防锁屏</button>
+        <button class="nav-item" data-tab="logs">日志</button>
+        <button class="nav-item" data-tab="about">关于</button>
+      </nav>
+
+      <div class="side-foot">
+        <label class="switch-row"><span>开机自启</span>
+          <input type="checkbox" id="opt-autostart"><i class="sw"></i>
+        </label>
+        <label class="switch-row"><span>关闭到托盘</span>
+          <input type="checkbox" id="opt-minclose"><i class="sw"></i>
+        </label>
+        <label class="switch-row"><span>详细日志</span>
+          <input type="checkbox" id="opt-verbose"><i class="sw"></i>
+        </label>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <!-- 连接 -->
+      <section class="tab active" id="tab-conn">
+        <div class="card fill">
+          <div class="card-head">
+            <h2>站点</h2>
+            <div class="row">
+              <select id="site-select"></select>
+              <button class="btn ghost" id="btn-new">新建</button>
+              <button class="btn ghost danger" id="btn-del">删除</button>
+            </div>
+          </div>
+
+          <div class="grid">
+            <label>名称<input id="f-name" type="text" placeholder="公司 FTP"></label>
+            <label>服务器<input id="f-host" type="text" placeholder="192.168.1.10"></label>
+            <label>端口<input id="f-port" type="number" min="1" max="65535" placeholder="21"></label>
+            <label>用户<input id="f-user" type="text" placeholder="anonymous"></label>
+            <label>密码<input id="f-pass" type="password" placeholder="留空表示匿名"></label>
+            <label>盘符<select id="f-drive"></select></label>
+            <label class="wide">远端目录<input id="f-path" type="text" placeholder="/ 或 /Elements/ISO"></label>
+            <label>LIST 时区修正（分钟）<input id="f-tz" type="number" placeholder="480"></label>
+            <div class="field">
+              <span>连接加密</span>
+              <label class="opt"><input type="checkbox" id="f-tls"> 使用 FTPS（显式 TLS）</label>
+            </div>
+          </div>
+
+          <div class="target">
+            <span class="k">挂载到</span>
+            <code id="target-url">—</code>
+          </div>
+        </div>
+
+        <div class="card actions">
+          <button class="btn" id="btn-check">检测连接</button>
+          <button class="btn" id="btn-save">保存</button>
+          <span class="spacer"></span>
+          <button class="btn" id="btn-open">打开盘符</button>
+          <button class="btn" id="btn-rw">读写测试</button>
+          <button class="btn" id="btn-unmount">卸载</button>
+          <button class="btn primary" id="btn-mount">挂载</button>
+        </div>
+
+        <div class="hint" id="hint"></div>
+      </section>
+
+      <!-- 防锁屏 -->
+      <section class="tab" id="tab-awake">
+        <div class="card">
+          <div class="card-head">
+            <h2>防锁屏</h2>
+            <div class="row">
+              <span class="ka-badge" id="ka-badge">未触发</span>
+            </div>
+          </div>
+          <label class="switch-row ka-row"><span>强制常亮（忽略下面的列表）</span>
+            <input type="checkbox" id="ka-force"><i class="sw"></i>
+          </label>
+          <div class="ka-tip">列表里任意一个「已启用」的程序在运行，就保持屏幕常亮；全部退出后自动恢复，系统该睡就睡。</div>
+        </div>
+
+        <div class="card grow">
+          <div class="card-head">
+            <h2>监控的程序</h2>
+            <div class="row">
+              <select id="ka-pick"></select>
+              <button class="btn ghost" id="ka-pick-add">添加所选</button>
+              <button class="btn ghost" id="ka-refresh">刷新</button>
+            </div>
+          </div>
+
+          <div class="row ka-add">
+            <input id="ka-name" type="text" placeholder="手动输入进程名，例如 hexin.exe">
+            <button class="btn ghost" id="ka-add">添加</button>
+          </div>
+
+          <div class="ka-list" id="ka-list"></div>
+
+          <div class="target">
+            <span class="k">配置</span>
+            <code id="ka-path">—</code>
+          </div>
+        </div>
+
+        <div class="hint" id="ka-hint"></div>
+      </section>
+
+      <!-- 日志 -->
+      <section class="tab" id="tab-logs">
+        <div class="card grow">
+          <div class="card-head">
+            <h2>运行日志</h2>
+            <div class="row">
+              <button class="btn ghost" id="btn-logdir">打开目录</button>
+              <button class="btn ghost" id="btn-logclear">清空</button>
+            </div>
+          </div>
+          <div class="logs" id="logs"></div>
+        </div>
+      </section>
+
+      <!-- 关于 -->
+      <section class="tab" id="tab-about">
+        <div class="card grow about">
+          <img src="icon-big.png" class="about-icon" alt="">
+          <h1>FtpMount</h1>
+          <p class="ver-line">版本 <b id="about-ver">—</b> · 构建 <span id="about-build">—</span></p>
+          <p class="desc">把 FTP / FTPS 服务器挂载成 Windows 本地盘符，像用 U 盘一样用远程目录。</p>
+          <ul class="feat">
+            <li>基于 WinFsp，资源管理器原生访问，无需安装驱动</li>
+            <li>连接池 + 惰性下载 + REST 区间续传，大目录不卡顿</li>
+            <li>死连接自动探活重连，断网恢复后无需重新挂载</li>
+            <li>托盘常驻、开机自启、密码用 DPAPI 加密保存</li>
+          </ul>
+          <div class="meta" id="about-meta"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

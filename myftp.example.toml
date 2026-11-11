@@ -1,0 +1,31 @@
+# FtpMount 连接配置模板
+# 复制本文件为 myftp.toml，改完下面几行即可使用：
+#   ftpmount-rs.exe mount myftp.toml Z:
+# 想先验证连通性（不用管理员权限）：ftpmount-rs.exe check myftp.toml
+
+[ftp]
+host = "192.168.1.10"    # 服务器域名或 IP（示例）
+port = 21                # 默认 21
+user = "yourname"
+pass = "yourpassword"
+
+# 起始目录：留空 = 服务器根目录；填 "/public" 之类则只挂这个子目录
+remote_path = ""
+
+# 挂载盘符
+drive = "Z:"
+volname = "My FTP"
+
+# 时区修正（分钟）：服务器 LIST 返回的是它本地时间，这里填与 UTC 的差值。
+# 北京/上海时区 = +480；服务器在 UTC 上就填 0。填错会导致文件时间显示偏差。
+list_tz_offset = 480
+
+# --- 以下保持默认即可，勿改 ---
+tls = false
+no_check_certificate = false
+
+# 并发连接数。不要设成 1：只有一条连接时，大文件传输会把它占住，
+# 期间的目录刷新 / 新建 / 取属性全部排队直到超时，资源管理器就报
+# 「位置不可用，由于 I/O 设备错误」。服务器若只允许单连接会回 421，
+# 程序会自动把上限收缩到已建立的条数，所以填大了也不会坏。
+max_conn = 4

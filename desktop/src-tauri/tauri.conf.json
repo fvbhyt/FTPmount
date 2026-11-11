@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "FtpMount",
+  "version": "0.1.12",
+  "identifier": "com.ftpmount.desktop",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "FtpMount",
+        "width": 784,
+        "height": 531,
+        "minWidth": 704,
+        "minHeight": 464,
+        "center": true,
+        "resizable": true,
+        "decorations": false,
+        "transparent": false,
+        "visible": false,
+        "dragDropEnabled": false,
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-gpu-sandbox"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "resources": ["winfsp/winfsp-2.1.25156.msi"],
+    "windows": {
+      "nsis": {
+        "languages": ["SimpChinese"],
+        "installMode": "perMachine",
+        "displayLanguageSelector": false,
+        "installerHooks": "installer.nsh"
+      }
+    }
+  }
+}

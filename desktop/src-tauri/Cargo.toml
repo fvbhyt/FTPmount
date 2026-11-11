@@ -1,0 +1,35 @@
+[package]
+name = "ftpmount-desktop"
+version = "0.1.12"
+edition = "2021"
+description = "FtpMount — 把 FTP / SFTP 服务器挂载成 Windows 本地盘符"
+authors = ["ftpmount"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+winfsp = { version = "0.13", features = ["delayload"] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-autostart = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+chrono = "0.4"
+winfsp = { version = "0.13", features = ["delayload"] }
+ftpmount-rs = { path = "../.." }
+# 防锁屏用：SetThreadExecutionState + 进程枚举 + 窗口标题
+windows = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_System_Power",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_UI_WindowsAndMessaging",
+] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
